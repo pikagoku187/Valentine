@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Khu tự trị A Sủi</title>
+
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  overflow:hidden;
+  font-family:Tahoma, sans-serif;
+  background: radial-gradient(circle at center, #ffd6f0 0%, #ff7ac3 50%, #a00055 100%);
+  color:white;
+}
+
+/* SECTION */
+.section{
+  position:fixed;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.6s ease;
+}
+
+.section.active{
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* TEXT */
+h1{
+  font-size:36px;
+  text-align:center;
+  margin:20px;
+  text-shadow:0 0 20px rgba(255,255,255,0.8);
+}
+
+label{
+  font-size:20px;
+  font-weight:bold;
+  margin:12px;
+  text-shadow:0 0 10px rgba(0,0,0,0.8);
+}
+
+input[type="checkbox"]{
+  accent-color:#ff69b4;
+  transform:scale(1.2);
+  margin-right:8px;
+}
+
+/* BUTTON */
+button{
+  margin:20px;
+  padding:14px 32px;
+  border:none;
+  border-radius:40px;
+  font-size:16px;
+  cursor:pointer;
+  background:#ff69b4;
+  color:white;
+  transition:0.2s;
+}
+
+button:hover{
+  transform:scale(1.05);
+}
+
+#noBtn{
+  position:absolute;
+  background:#333;
+}
+
+/* PROGRESS */
+.progress{
+  width:320px;
+  height:14px;
+  background:rgba(255,255,255,0.3);
+  border-radius:30px;
+  overflow:hidden;
+}
+
+.bar{
+  height:100%;
+  width:0%;
+  background:white;
+}
+
+/* CANVAS */
+canvas{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+}
+
+/* SAKURA */
+.sakura{
+  position:fixed;
+  top:-10px;
+  font-size:18px;
+  animation:fall linear infinite;
+}
+
+@keyframes fall{
+  to{ transform:translateY(100vh); }
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOADING -->
+<div id="loading" class="section active">
+  <h1>Loading...</h1>
+  <div class="progress">
+    <div class="bar" id="bar"></div>
+  </div>
+</div>
+
+<!-- WELCOME -->
+<div id="welcome" class="section">
+  <h1>🏛️ Chào mừng đến với khu tự trị của A Sủi</h1>
+
+  <label><input type="checkbox"> Điều 1: A Sủi là số 1</label>
+  <label><input type="checkbox"> Điều 2: A Sủi luôn đúng</label>
+  <label><input type="checkbox"> Điều 3: A Sủi sai thì xem lại điều 2</label>
+
+  <div>
+    <button id="yesBtn" disabled>✅ Đồng ý</button>
+    <button id="noBtn">❌ Không đồng ý</button>
+  </div>
+</div>
+
+<!-- FINAL -->
+<div id="final" class="section">
+  <canvas id="canvas"></canvas>
+  <h1>💖 Happy Valentine 💖</h1>
+  <h2 id="subText"></h2>
+</div>
+
+<script>
+
+/* SECTION SWITCH */
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* LOADING */
+let progress=0;
+let loading=setInterval(()=>{
+  progress+=2;
+  document.getElementById("bar").style.width=progress+"%";
+  if(progress>=100){
+    clearInterval(loading);
+    setTimeout(()=>showSection("welcome"),500);
+  }
+},30);
+
+/* CHECK LOGIC */
+const checks=document.querySelectorAll('#welcome input');
+const yesBtn=document.getElementById("yesBtn");
+
+checks.forEach(c=>{
+  c.addEventListener("change",()=>{
+    const allChecked=[...checks].every(x=>x.checked);
+    yesBtn.disabled=!allChecked;
+  });
+});
+
+/* NO BUTTON ESCAPE */
+const noBtn=document.getElementById("noBtn");
+noBtn.style.left="60%";
+noBtn.style.top="65%";
+
+document.addEventListener("mousemove",e=>{
+  if(!document.getElementById("welcome").classList.contains("active")) return;
+  const rect=noBtn.getBoundingClientRect();
+  const dx=e.clientX-(rect.left+rect.width/2);
+  const dy=e.clientY-(rect.top+rect.height/2);
+  if(Math.sqrt(dx*dx+dy*dy)<130){
+    noBtn.style.left=Math.random()*(window.innerWidth-150)+"px";
+    noBtn.style.top=Math.random()*(window.innerHeight-80)+"px";
+  }
+});
+
+/* YES BUTTON */
+yesBtn.onclick=function(){
+  showSection("final");
+  startHeartFireworks();
+  startSakura();
+  showText();
+};
+
+/* HEART FIREWORKS */
+function startHeartFireworks(){
+  const canvas=document.getElementById("canvas");
+  const ctx=canvas.getContext("2d");
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+
+  let particles=[];
+
+  function heart(t){
+    return{
+      x:16*Math.pow(Math.sin(t),3),
+      y:-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))
+    };
+  }
+
+  function create(){
+    const cx=canvas.width/2;
+    const cy=canvas.height/2-50;
+
+    for(let i=0;i<500;i++){
+      let t=Math.random()*Math.PI*2;
+      let pos=heart(t);
+      particles.push({
+        x:cx,
+        y:cy,
+        tx:cx+pos.x*15,
+        ty:cy+pos.y*15,
+        alpha:1
+      });
+    }
+
+    document.body.style.background =
+      `radial-gradient(circle, #ffd6f0 0%, hsl(${Math.random()*360},70%,60%) 50%, #a00055 100%)`;
+  }
+
+  function animate(){
+    ctx.fillStyle="rgba(255,105,180,0.15)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    particles.forEach((p,i)=>{
+      p.x+=(p.tx-p.x)*0.05;
+      p.y+=(p.ty-p.y)*0.05;
+      p.alpha-=0.01;
+      ctx.fillStyle="rgba(255,255,255,"+p.alpha+")";
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,2,0,Math.PI*2);
+      ctx.fill();
+      if(p.alpha<=0) particles.splice(i,1);
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+  setInterval(create,2000);
+}
+
+/* SAKURA */
+function startSakura(){
+  setInterval(()=>{
+    for(let i=0;i<6;i++){
+      const s=document.createElement("div");
+      s.className="sakura";
+      s.innerHTML="🌸";
+      s.style.left=Math.random()*100+"vw";
+      s.style.animationDuration=(6+Math.random()*6)+"s";
+      s.style.fontSize=(14+Math.random()*10)+"px";
+      document.body.appendChild(s);
+      setTimeout(()=>s.remove(),12000);
+    }
+  },300);
+}
+
+/* TEXT */
+function showText(){
+  const text=document.getElementById("subText");
+  text.innerHTML="✨ Chanh 💖 Sủi ✨<br>🎉 Gia nhập liên minh thành công 🎉";
+  text.style.fontSize="30px";
+  text.style.textAlign="center";
+  text.style.opacity="0";
+  text.style.transform="scale(0.5)";
+  text.style.transition="all 1s ease";
+
+  setTimeout(()=>{
+    text.style.opacity="1";
+    text.style.transform="scale(1)";
+  },500);
+}
+
+</script>
+
+</body>
+</html>
